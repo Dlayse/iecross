@@ -12,6 +12,10 @@ interface Packed {
   c: Record<string, number>;
   t: number;
   k?: string[];
+  tr?: Profile["training"];
+  gm?: Profile["gearMode"];
+  g?: Profile["gear"];
+  pf?: Profile["prefs"];
 }
 
 const toB64 = (s: string) => btoa(String.fromCharCode(...new TextEncoder().encode(s))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
@@ -22,6 +26,13 @@ export function encodeProfile(p: Profile): string {
   const packed: Packed = { v: 1, n: p.name, o: p.owned, l: p.level, c: p.coaches, t: p.techLevel };
   if (Object.keys(s).length) packed.s = s;
   if (p.locked.length) packed.k = p.locked;
+  const tr = Object.fromEntries(Object.entries(p.training ?? {}).filter(([id, t]) => p.owned.includes(id) && (t.stat || t.power)));
+  if (Object.keys(tr).length) packed.tr = tr;
+  if (p.gearMode === "manual") {
+    packed.gm = "manual";
+    packed.g = p.gear;
+  }
+  if (p.prefs) packed.pf = p.prefs;
   return toB64(JSON.stringify(packed));
 }
 
@@ -38,6 +49,10 @@ export function decodeProfile(code: string): Omit<Profile, "id"> | null {
       coaches: x.c ?? {},
       techLevel: Math.max(1, Math.min(10, Number(x.t) || 10)),
       locked: (x.k ?? []).filter((id) => owned.includes(id)),
+      training: Object.fromEntries(Object.entries(x.tr ?? {}).filter(([id]) => owned.includes(id))),
+      gearMode: x.gm === "manual" ? "manual" : "auto",
+      gear: x.g,
+      prefs: x.pf,
     };
   } catch {
     return null;

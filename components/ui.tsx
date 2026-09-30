@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { shareUrl } from "@/lib/share";
+import { decodeProfile, shareUrl } from "@/lib/share";
 import { withBase } from "@/lib/paths";
 import type { Element, Player } from "@/lib/types";
 import type { useProfiles } from "@/lib/store";
@@ -83,6 +83,20 @@ export function ProfileBar({ ctx }: { ctx: ReturnType<typeof useProfiles> }) {
           }}
         >
           {copied ? "✓ Enlace copiado" : "🔗 Compartir plantilla"}
+        </button>
+        <button
+          className="rounded-md border border-line px-2 py-1 font-semibold hover:border-bolt hover:text-bolt"
+          title="Pega un enlace de «Compartir plantilla» (de esta web o de otra copia, como la local) para añadirlo como perfil"
+          onClick={() => {
+            const link = prompt("Pega el enlace de la plantilla (el de «Compartir plantilla»):");
+            if (!link?.trim()) return;
+            const data = decodeProfile(link.trim().split("#").pop() ?? "");
+            if (!data) return alert("Ese enlace no es válido o está incompleto.");
+            add(data.name, data);
+            alert(`Añadido el perfil «${data.name}» con ${data.owned.length} jugadores.`);
+          }}
+        >
+          📥 Importar
         </button>
         <button className="hover:text-text" onClick={() => { const n = prompt("Nuevo nombre", profile.name); if (n?.trim()) rename(n.trim()); }}>Renombrar</button>
         {profiles.length > 1 && (
