@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #07111f;
+  --panel: #0e1c30;
+  --panel-2: #132640;
+  --line: #20385a;
+  --text: #e8f1fb;
+  --muted: #8aa4c2;
+  --bolt: #ffd23f;
+  --bolt-ink: #1a1400;
+  --pitch: #0f5132;
+  --pitch-2: #13603c;
+  --fuego: #ff6b4a;
+  --viento: #5cc8ff;
+  --bosque: #54d17a;
+  --montana: #d4a054;
+  --good: #54d17a;
+  --bad: #ff6b6b;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel-2);
+  --color-line: var(--line);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-bolt: var(--bolt);
+  --color-bolt-ink: var(--bolt-ink);
+  --color-good: var(--good);
+  --color-bad: var(--bad);
+  --color-fuego: var(--fuego);
+  --color-viento: var(--viento);
+  --color-bosque: var(--bosque);
+  --color-montana: var(--montana);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-title);
+}
+
+body {
+  background: radial-gradient(1200px 600px at 80% -10%, #16335a 0%, transparent 60%), var(--bg);
+  color: var(--text);
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+.pitch {
+  background:
+    repeating-linear-gradient(0deg, var(--pitch) 0 44px, var(--pitch-2) 44px 88px);
+  border: 2px solid #2d8a5b;
+}
