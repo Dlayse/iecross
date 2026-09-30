@@ -5,7 +5,7 @@ import Link from "next/link";
 import { COACH_BY_ID, PLAYERS } from "@/lib/data";
 
 const PLAYERS_COUNT = PLAYERS.length;
-import { AWAKEN_RANKS, TRIGGER_LABEL, type Evaluation } from "@/lib/engine";
+import { AWAKEN_RANKS, TRIGGER_LABEL, type Evaluation, type Lineup } from "@/lib/engine";
 import { STRATEGIES } from "@/lib/strategies";
 import { ELEMENT_TEXT, Face, PosBadge } from "./ui";
 
@@ -78,6 +78,8 @@ export function TeamCard({
   editable = true,
   ideal,
   owned,
+  variants,
+  onVariants,
 }: {
   ev: Evaluation;
   rank?: number;
@@ -89,8 +91,11 @@ export function TeamCard({
   /** Once ideal de esta formación con toda la base (para saber a qué aspirar) */
   ideal?: { lineup: { slots: (string | null)[] }; ev: Evaluation };
   owned?: string[];
+  variants?: { loading: boolean; items: { lineup: Lineup; ev: Evaluation }[] };
+  onVariants?: () => void;
 }) {
   const [showIdeal, setShowIdeal] = useState(false);
+  const [showVariants, setShowVariants] = useState(false);
   const [open, setOpen] = useState(rank === 1 || !rank);
   const coach = COACH_BY_ID.get(coachId)!;
   const synergies = ev.passives.filter((p) => p.status === "activa" && (p.conditional || p.weight !== 1));
@@ -301,11 +306,75 @@ export function TeamCard({
             </ul>
           </div>
 
-          <button onClick={() => setOpen(!open)} className="text-sm font-semibold text-bolt hover:underline">
-            {open ? "Ocultar detalle" : "Ver detalle por jugador"}
-          </button>
+          <div className="flex flex-wrap gap-4">
+            <button onClick={() => setOpen(!open)} className="text-sm font-semibold text-bolt hover:underline">
+              {open ? "Ocultar detalle" : "Ver detalle por jugador"}
+            </button>
+            {onVariants && (
+              <button
+                onClick={() => {
+                  if (!variants) onVariants();
+                  setShowVariants(!showVariants || !variants);
+                }}
+                className="text-sm font-semibold text-bolt hover:underline"
+              >
+                🔀 {showVariants && variants ? "Ocultar variantes" : "Ver variantes"}
+              </button>
+            )}
+          </div>
         </div>
       </div>
+
+      {showVariants && variants && (
+        <div className="border-t border-line p-4">
+          <h3 className="mb-2 font-display text-xl font-bold">Variantes con tus jugadores</h3>
+          {variants.loading ? (
+            <p className="text-sm text-muted">Buscando onces alternativos…</p>
+          ) : variants.items.length === 0 ? (
+            <p className="text-sm text-muted">No hay alternativas que se diferencien lo suficiente con tu plantilla: este once es claramente el mejor.</p>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-3">
+              {variants.items.map(({ lineup, ev: vev }, i) => {
+                const mainIds = new Set(ev.members.map((m) => m.player.id));
+                const varIds = new Set(vev.members.map((m) => m.player.id));
+                const out = ev.members.filter((m) => !varIds.has(m.player.id)).map((m) => m.player.name);
+                const inn = vev.members.filter((m) => !mainIds.has(m.player.id)).map((m) => m.player.name);
+                const delta = (vev.score - ev.score) / 5;
+                return (
+                  <div key={i} className="space-y-2 rounded-xl border border-line bg-panel-2 p-3">
+                    <div className="flex items-baseline gap-2">
+                      <b className="font-display text-lg">Variante {i + 1}</b>
+                      <span className="ml-auto font-display text-2xl font-extrabold text-bolt">{fmtScore(vev.score)}</span>
+                      <span className={`text-xs ${delta >= 0 ? "text-good" : "text-muted"}`}>
+                        {delta >= 0 ? "+" : "−"}
+                        {Math.abs(delta).toLocaleString("es", { maximumFractionDigits: 1, minimumFractionDigits: 1 })}
+                      </span>
+                    </div>
+                    <Pitch ev={vev} pinned={pinned} />
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                      <Bar label="Ataque" value={vev.parts.attack} hint="" />
+                      <Bar label="Portería" value={vev.parts.defense} hint="" />
+                      <Bar label="Regate" value={vev.parts.dribble} hint="" />
+                      <Bar label="Robo" value={vev.parts.block} hint="" />
+                    </div>
+                    <div className="text-xs">
+                      <div>
+                        <span className="text-bad">Sale:</span> {out.join(", ")}
+                      </div>
+                      <div>
+                        <span className="text-good">Entra:</span> {inn.join(", ")}
+                      </div>
+                    </div>
+                    <Link href={editorHref(lineup.coachId, lineup.coachLevel, lineup.slots)} className="inline-block text-xs font-semibold text-bolt hover:underline">
+                      ✏️ Abrir en el editor
+                    </Link>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {showIdeal && ideal && (
         <div className="grid gap-4 border-t border-line p-4 md:grid-cols-[minmax(0,340px)_1fr]">

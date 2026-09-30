@@ -18,6 +18,8 @@ export default function TeamsPage() {
   const workers = useRef<Worker[]>([]);
   const [genPrefs, setGenPrefs] = useState<Prefs | null>(null);
   const [ideals, setIdeals] = useState<Record<string, Lineup>>({});
+  const [variants, setVariants] = useState<Record<string, { loading: boolean; lineups: Lineup[] }>>({});
+  const lastBase = useRef<Record<string, unknown> | null>(null);
   const prefs = profile?.prefs ?? DEFAULT_PREFS;
   const stopAll = () => {
     workers.current.forEach((w) => w.terminate());
@@ -63,6 +65,8 @@ export default function TeamsPage() {
     };
     setGenPrefs(prefs);
     setIdeals({});
+    setVariants({});
+    lastBase.current = base;
     // Once ideal de cada formación: toda la base, despertar máximo, con tu nivel, equipamiento y entrenador.
     const ideal = { ...base, tag: "ideal", pool: PLAYERS.map((p) => p.id), stages: {}, locked: [] };
     for (let k = 0; k < n; k++) {
@@ -87,6 +91,37 @@ export default function TeamsPage() {
       w.postMessage({ ...ideal, coaches: mine });
     }
   };
+
+  // Variantes: se piden por equipo y se calculan en un worker aparte con los mismos parámetros
+  const requestVariants = (l: Lineup) => {
+    if (!lastBase.current) return;
+    setVariants((prev) => ({ ...prev, [l.coachId]: { loading: true, lineups: [] } }));
+    const w = new Worker(new URL("../../lib/recommend.worker.ts", import.meta.url));
+    workers.current.push(w);
+    w.onmessage = (e) => {
+      if (e.data.type !== "variants") return;
+      setVariants((prev) => ({ ...prev, [e.data.coachId]: { loading: false, lineups: e.data.lineups } }));
+      w.terminate();
+      workers.current = workers.current.filter((x) => x !== w);
+    };
+    w.postMessage({ ...lastBase.current, tag: "variants", coaches: [], variantsOf: l });
+  };
+
+  const variantEvals = useMemo(() => {
+    if (!profile) return {};
+    return Object.fromEntries(
+      Object.entries(variants).map(([cid, v]) => [
+        cid,
+        {
+          loading: v.loading,
+          items: v.lineups.map((l) => ({
+            lineup: l,
+            ev: evaluate(l, { techLevel: profile.techLevel, playerLevel: profile.level, prefs: genPrefs ?? prefs, gear: effectiveGear(profile), awakening: (id) => stageOf(profile, id) }),
+          })),
+        },
+      ]),
+    );
+  }, [variants, profile, genPrefs, prefs]);
 
   const idealEvals = useMemo(() => {
     if (!profile) return {};
@@ -152,7 +187,7 @@ export default function TeamsPage() {
 
       <div className="space-y-4">
         {(showAll ? results : results.slice(0, 3)).map(({ l, ev }, i) => (
-          <TeamCard key={l.coachId} ev={ev} rank={i + 1} coachId={l.coachId} coachLevel={l.coachLevel} pinned={profile.locked} ideal={idealEvals[l.coachId]} owned={profile.owned} />
+          <TeamCard key={l.coachId} ev={ev} rank={i + 1} coachId={l.coachId} coachLevel={l.coachLevel} pinned={profile.locked} ideal={idealEvals[l.coachId]} owned={profile.owned} variants={variantEvals[l.coachId]} onVariants={() => requestVariants(l)} />
         ))}
       </div>
       {results.length > 3 && (

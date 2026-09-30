@@ -10,6 +10,8 @@ export interface OptimizeInput {
   opts: EvalOptions;
   /** jugadores que deben estar sí o sí */
   locked?: string[];
+  /** jugadores que NO pueden salir (para buscar variantes) */
+  banned?: string[];
   seed?: number;
 }
 
@@ -27,7 +29,7 @@ function rng(seed: number) {
 export function optimizeFormation(input: OptimizeInput): OptimizeResult {
   const coach = COACHES.find((c) => c.id === input.coachId)!;
   const slots = coach.formation.slots;
-  const pool = [...new Set(input.pool)];
+  const pool = [...new Set(input.pool)].filter((id) => !input.banned?.includes(id));
   const locked = (input.locked ?? []).filter((id) => pool.includes(id));
   const rand = rng(input.seed ?? 1);
   let evals = 0;
@@ -147,4 +149,47 @@ export function recommend(
     onProgress?.(k + 1, coaches.length);
   });
   return out.sort((x, y) => y.evaluation.score - x.evaluation.score);
+}
+
+/** Onces alternativos para una formación: se prohíbe, uno a uno, a cada jugador del once principal
+ *  (y a parejas de los más determinantes) y se vuelve a optimizar. Se quedan los mejores que se
+ *  diferencian del principal y entre sí en al menos 2 jugadores. */
+export function variants(
+  best: Lineup,
+  pool: string[],
+  opts: EvalOptions,
+  locked: string[] = [],
+  count = 3,
+): OptimizeResult[] {
+  const base = evaluate(best, { ...opts, fast: true }).score;
+  const members = best.slots.filter((id): id is string => !!id && !locked.includes(id));
+  // Lo que pierde el once sin cada jugador: los más determinantes generan variantes más distintas
+  const impact = members
+    .map((id) => ({ id, drop: base - evaluate({ ...best, slots: best.slots.map((s) => (s === id ? null : s)) }, { ...opts, fast: true }).score }))
+    .sort((a, b) => b.drop - a.drop);
+  const bans: string[][] = [
+    ...impact.map((x) => [x.id]),
+    ...[0, 1, 2].flatMap((i) => [3, 4, 5].map((j) => [impact[i]?.id, impact[j]?.id].filter(Boolean) as string[])),
+  ];
+  const seen = new Set([[...best.slots].filter(Boolean).sort().join(",")]);
+  const found: OptimizeResult[] = [];
+  for (const banned of bans) {
+    const r = optimizeFormation({ pool, coachId: best.coachId, coachLevel: best.coachLevel, opts, locked, banned });
+    const key = r.lineup.slots.filter(Boolean).sort().join(",");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    found.push(r);
+  }
+  const setOf = (l: Lineup) => new Set(l.slots.filter(Boolean) as string[]);
+  const diff = (a: Lineup, b: Lineup) => [...setOf(a)].filter((id) => !setOf(b).has(id)).length;
+  const picked: OptimizeResult[] = [];
+  for (const minDiff of [2, 1]) {
+    for (const r of found.sort((a, b) => b.evaluation.score - a.evaluation.score)) {
+      if (picked.length >= count) break;
+      if (picked.includes(r)) continue;
+      if (diff(r.lineup, best) < minDiff || picked.some((p) => diff(r.lineup, p.lineup) < minDiff)) continue;
+      picked.push(r);
+    }
+  }
+  return picked.sort((a, b) => b.evaluation.score - a.evaluation.score);
 }
