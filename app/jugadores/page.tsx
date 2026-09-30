@@ -2,7 +2,7 @@
 import { useMemo, useState } from "react";
 import { PLAYERS } from "@/lib/data";
 import { AWAKEN_RANKS, BENCH, benchStat, soloTechniques, type Role } from "@/lib/engine";
-import { stageOf, useProfiles , effectiveGear, trainingOf } from "@/lib/store";
+import { stageOf, useProfiles , effectiveGear } from "@/lib/store";
 import { ELEMENT_TEXT, ElementDot, Face, PosBadge, ProfileBar, Stars } from "@/components/ui";
 import type { Position, TechType } from "@/lib/types";
 
@@ -38,7 +38,7 @@ export default function PlayersPage() {
     )
       .flatMap((p) => {
         const stage = owned.has(p.id) ? stageOf(profile, p.id) : 10;
-        return soloTechniques(p, { techLevel: profile.techLevel, playerLevel: profile.level, gear: effectiveGear(profile), training: (id) => trainingOf(profile, id), stage })
+        return soloTechniques(p, { techLevel: profile.techLevel, playerLevel: profile.level, gear: effectiveGear(profile), stage })
           .filter((t) => !type || t.tech.type === type)
           .map((t) => {
             const v = mode === "full" ? t.full : t.base;

@@ -3,7 +3,7 @@ import { withBase } from "@/lib/paths";
 import { useEffect, useMemo, useState } from "react";
 import { COACHES, COACH_BY_ID, PLAYERS, PLAYER_BY_ID, slotArea, slotConditionMet, zoneBonus } from "@/lib/data";
 import { evaluate } from "@/lib/engine";
-import { coachLevel as ownedCoachLevel, stageOf, useProfiles , effectiveGear, trainingOf } from "@/lib/store";
+import { coachLevel as ownedCoachLevel, stageOf, useProfiles , effectiveGear } from "@/lib/store";
 import { ElementDot, ELEMENT_TEXT, Face, PosBadge, ProfileBar, Stars } from "@/components/ui";
 import { editorHref, TeamCard } from "@/components/TeamCard";
 import type { Position } from "@/lib/types";
@@ -39,7 +39,7 @@ export default function EditorPage() {
   const ev = useMemo(
     () =>
       profile
-        ? evaluate({ coachId, coachLevel: level, slots }, { techLevel: profile.techLevel, playerLevel: profile.level, prefs: profile.prefs, gear: effectiveGear(profile), training: (id) => trainingOf(profile, id), awakening: (id) => stageOf(profile, id) })
+        ? evaluate({ coachId, coachLevel: level, slots }, { techLevel: profile.techLevel, playerLevel: profile.level, prefs: profile.prefs, gear: effectiveGear(profile), awakening: (id) => stageOf(profile, id) })
         : null,
     [coachId, level, slots, profile],
   );

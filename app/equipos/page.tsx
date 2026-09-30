@@ -5,7 +5,7 @@ import Link from "next/link";
 import { COACHES, PLAYERS } from "@/lib/data";
 import { DEFAULT_PREFS, evaluate, type Lineup, type Prefs } from "@/lib/engine";
 import { PrefsPanel } from "@/components/PrefsPanel";
-import { coachLevel, stageOf, useProfiles , effectiveGear, trainingOf } from "@/lib/store";
+import { coachLevel, stageOf, useProfiles , effectiveGear } from "@/lib/store";
 import { ProfileBar } from "@/components/ui";
 import { TeamCard } from "@/components/TeamCard";
 
@@ -60,12 +60,11 @@ export default function TeamsPage() {
       locked: profile.locked.filter((id) => profile.owned.includes(id)),
       prefs,
       gear: effectiveGear(profile),
-      training: Object.fromEntries(profile.owned.map((id) => [id, trainingOf(profile, id)]).filter(([, t]) => t)),
     };
     setGenPrefs(prefs);
     setIdeals({});
     // Once ideal de cada formación: toda la base, despertar máximo, con tu nivel, equipamiento y entrenador.
-    const ideal = { ...base, tag: "ideal", pool: PLAYERS.map((p) => p.id), stages: {}, locked: [], training: {} };
+    const ideal = { ...base, tag: "ideal", pool: PLAYERS.map((p) => p.id), stages: {}, locked: [] };
     for (let k = 0; k < n; k++) {
       const w = new Worker(new URL("../../lib/recommend.worker.ts", import.meta.url));
       workers.current.push(w);
@@ -102,7 +101,7 @@ export default function TeamsPage() {
   const results = useMemo(() => {
     if (!lineups || !profile) return [];
     return lineups
-      .map((l) => ({ l, ev: evaluate(l, { techLevel: profile.techLevel, playerLevel: profile.level, prefs: genPrefs ?? prefs, gear: effectiveGear(profile), training: (id) => trainingOf(profile, id), awakening: (id) => stageOf(profile, id) }) }))
+      .map((l) => ({ l, ev: evaluate(l, { techLevel: profile.techLevel, playerLevel: profile.level, prefs: genPrefs ?? prefs, gear: effectiveGear(profile), awakening: (id) => stageOf(profile, id) }) }))
       .sort((a, b) => b.ev.score - a.ev.score);
   }, [lineups, profile, genPrefs, prefs]);
 

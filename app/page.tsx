@@ -4,9 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { COACHES, PLAYERS, TEAMS } from "@/lib/data";
 import { coachLevel, stageOf, useProfiles } from "@/lib/store";
-import { AWAKEN_RANKS, MAX_LEVEL, TRAIN_TYPE, gearLevel } from "@/lib/engine";
-
-const STAT_LABEL = { Tiro: "Tiro", Regate: "Técnica", Bloqueo: "Bloqueo", Parada: "Parada" } as const;
+import { AWAKEN_RANKS, MAX_LEVEL, gearLevel } from "@/lib/engine";
 import { MAIN_STAT, autoGear } from "@/lib/gear";
 
 const GEAR_STATS = [
@@ -155,35 +153,6 @@ export default function RosterPage() {
                         ))}
                       </select>
                     </label>
-                  )}
-                  {on && (
-                    <div
-                      className="flex items-center gap-1 border-t border-line/70 px-2 py-1 text-[11px] text-muted"
-                      title={`Pasivas de entrenamiento (鍛錬): suma aquí lo que te dan en ${TRAIN_TYPE[p.position]} (p. ej. Tiro+ 500, poder de tiro +20, +35 por elemento)`}
-                    >
-                      鍛錬
-                      {(["stat", "power"] as const).map((k) => (
-                        <label key={k} className="ml-auto flex items-center gap-0.5">
-                          {k === "stat" ? STAT_LABEL[TRAIN_TYPE[p.position]] : "Poder"}+
-                          <input
-                            type="number"
-                            min={0}
-                            value={profile.training?.[p.id]?.[k] || ""}
-                            placeholder="0"
-                            onChange={(e) =>
-                              update((pr) => ({
-                                ...pr,
-                                training: {
-                                  ...pr.training,
-                                  [p.id]: { stat: 0, power: 0, ...pr.training?.[p.id], [k]: Math.max(0, Number(e.target.value) || 0) },
-                                },
-                              }))
-                            }
-                            className="w-12 rounded border border-line bg-panel px-1 text-right text-text"
-                          />
-                        </label>
-                      ))}
-                    </div>
                   )}
                 </div>
               );

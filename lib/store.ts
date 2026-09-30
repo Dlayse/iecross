@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { PLAYER_BY_ID } from "./data";
 import { autoGear } from "./gear";
-import { TRAIN_TYPE, type Gear, type Prefs, type Training } from "./engine";
+import type { Gear, Prefs } from "./engine";
 
 export interface Profile {
   id: string;
@@ -23,8 +23,6 @@ export interface Profile {
   gearMode?: "auto" | "manual";
   /** Estadísticas que suma el equipamiento a todos los jugadores de cada posición (modo manual) */
   gear?: Gear;
-  /** Pasivas de entrenamiento (鍛錬) por jugador: extra de estadística y de poder */
-  training?: Record<string, { stat: number; power: number }>;
 }
 
 interface State {
@@ -60,7 +58,6 @@ function migrate(p: Partial<Profile> & { noAwaken?: string[] }): Profile {
     prefs: p.prefs,
     gear: p.gear,
     gearMode: p.gearMode ?? "auto",
-    training: p.training ?? {},
   };
 }
 
@@ -111,14 +108,6 @@ export function useProfiles() {
       }),
     rename: (name: string) => update((p) => ({ ...p, name })),
   };
-}
-
-/** Entrenamiento de un jugador para el motor (tipo de técnica según su posición) */
-export function trainingOf(p: Profile, id: string): Training | undefined {
-  const t = p.training?.[id];
-  const pl = PLAYER_BY_ID.get(id);
-  if (!t || !pl || (!t.stat && !t.power)) return undefined;
-  return { type: TRAIN_TYPE[pl.position], stat: t.stat, power: t.power };
 }
 
 /** Equipamiento que se aplica en los cálculos */

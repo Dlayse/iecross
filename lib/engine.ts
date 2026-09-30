@@ -141,20 +141,10 @@ const gearFor = (gear: Gear | undefined, pos: Position): Record<StatKey, number>
   catch: gear?.[pos]?.catch ?? 0,
 });
 
-/** Pasivas de entrenamiento (鍛錬) de un jugador: estadística y poder extra para un tipo de técnica. */
-export interface Training {
-  type: TechType;
-  stat: number;
-  power: number;
-}
-/** Tipo de técnica que se entrena por defecto según la posición */
-export const TRAIN_TYPE: Record<Position, TechType> = { FW: "Tiro", MF: "Regate", DF: "Bloqueo", GK: "Parada" };
-
 /** Opciones que el usuario puede ajustar. */
 export interface EvalOptions {
   prefs?: Prefs;
   gear?: Gear;
-  training?: (playerId: string) => Training | undefined;
   techLevel: number; // 1-10
   /** Nivel mínimo de tus jugadores (1-440). */
   playerLevel?: number;
@@ -436,12 +426,6 @@ export function evaluate(lineup: Lineup, opts: EvalOptions = DEFAULT_OPTIONS): E
       techs: [],
       best: {},
     };
-    // Pasivas de entrenamiento (鍛錬): fijas desde el inicio
-    const tr = opts.training?.(pid);
-    if (tr) {
-      m.statBuff[TYPE_STAT[tr.type]] += tr.stat;
-      if (tr.power) m.powerMods.push({ value: tr.power, types: [tr.type] });
-    }
     // Técnicas conocidas a este nivel (la 2.ª se aprende a nivel 31); el poder se calcula luego.
     for (const tech of player.techniques) {
       if (tech.unlock > L) continue;
@@ -803,11 +787,6 @@ export function soloTechniques(player: Player, opts: EvalOptions & { stage?: num
   const zone = Math.max(0, ...player.zones.map((z) => z.bonus));
   const statBuff: Record<StatKey, number> = gearFor(opts.gear, player.position);
   const mods: PowerMod[] = [];
-  const tr = opts.training?.(player.id);
-  if (tr) {
-    statBuff[TYPE_STAT[tr.type]] += tr.stat;
-    if (tr.power) mods.push({ value: tr.power, types: [tr.type] });
-  }
   const crits: PowerMod[] = [];
   const cuts: { value: number; name?: string }[] = [];
   for (const pp of playerPassives(player)) {
