@@ -2,7 +2,7 @@
 import { withBase } from "@/lib/paths";
 import { useState } from "react";
 import Link from "next/link";
-import { COACH_BY_ID, PLAYERS } from "@/lib/data";
+import { COACH_BY_ID, PLAYERS, PLAYER_BY_ID, TECH_BY_CODE } from "@/lib/data";
 
 const PLAYERS_COUNT = PLAYERS.length;
 import { AWAKEN_RANKS, TRIGGER_LABEL, type Evaluation, type Lineup } from "@/lib/engine";
@@ -80,6 +80,7 @@ export function TeamCard({
   owned,
   variants,
   onVariants,
+  bookTips,
 }: {
   ev: Evaluation;
   rank?: number;
@@ -93,6 +94,8 @@ export function TeamCard({
   owned?: string[];
   variants?: { loading: boolean; items: { lineup: Lineup; ev: Evaluation }[] };
   onVariants?: () => void;
+  /** Manuales sugeridos para este once */
+  bookTips?: { picks: { playerId: string; code: string; gain: number }[]; score: number };
 }) {
   const [showIdeal, setShowIdeal] = useState(false);
   const [showVariants, setShowVariants] = useState(false);
@@ -325,6 +328,26 @@ export function TeamCard({
         </div>
       </div>
 
+      {bookTips && bookTips.picks.length > 0 && (
+        <div className="border-t border-line bg-bolt/5 px-4 py-3 text-sm">
+          <div className="flex flex-wrap items-baseline gap-2">
+            <b className="font-display text-lg">📘 Manuales sugeridos</b>
+            <span className="text-xs text-muted">
+              con tus manuales sin usar este once pasaría de {fmtScore(ev.score)} a <b className="text-bolt">{fmtScore(bookTips.score)}</b>
+            </span>
+          </div>
+          <ul className="mt-1 flex flex-wrap gap-1.5">
+            {bookTips.picks.map((b) => (
+              <li key={b.playerId + b.code} className="rounded-full border border-bolt/40 bg-panel-2 px-2 py-0.5 text-xs">
+                <b>{PLAYER_BY_ID.get(b.playerId)?.name}</b> ← {TECH_BY_CODE.get(b.code)?.name}{" "}
+                <span className="text-good">+{(b.gain / 5).toLocaleString("es", { maximumFractionDigits: 2, minimumFractionDigits: 1 })}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1 text-[11px] text-muted">Ojo: el manual se gasta al usarlo. Cuando se lo pongas a alguien, apúntalo en su «3.ª técnica» en Mi plantilla.</p>
+        </div>
+      )}
+
       {showVariants && variants && (
         <div className="border-t border-line p-4">
           <h3 className="mb-2 font-display text-xl font-bold">Variantes con tus jugadores</h3>
@@ -426,7 +449,7 @@ export function TeamCard({
                     <td>
                       {m.techs.map((t) => (
                         <div key={t.tech.code} className="text-xs">
-                          <span className={ELEMENT_TEXT[t.tech.element]}>●</span> {t.tech.name} <span className="text-muted">({t.tech.type}{t.elemMatch ? ", +20%" : ""})</span> <b>{k(t.duel)}</b>
+                          <span className={ELEMENT_TEXT[t.tech.element]}>●</span> {t.tech.name} {t.tech.fromBook && <span title="Aprendida con manual">📘</span>} <span className="text-muted">({t.tech.type}{t.elemMatch ? ", +20%" : ""})</span> <b>{k(t.duel)}</b>
                           {t.power !== t.basePower && <span className="text-good"> · poder {t.basePower}→{Math.round(t.power)}</span>}
                         </div>
                       ))}

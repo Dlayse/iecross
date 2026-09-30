@@ -7,7 +7,7 @@
 // frente al rival (desconocido aquí, así que neutro).
 import benchJson from "@/data/bench.json";
 import { autoGear } from "./gear";
-import { COACH_BY_ID, PLAYER_BY_ID, coachEffects, playerPassives, slotArea, slotConditionMet, zoneBonus } from "./data";
+import { COACH_BY_ID, PLAYER_BY_ID, TECH_BY_CODE, coachEffects, playerPassives, slotArea, slotConditionMet, zoneBonus } from "./data";
 import type { Coach, Effect, Element, ParsedPassive, Player, Position, SlotDef, StatKey, TechType, Technique, Trigger } from "./types";
 
 export const TYPE_STAT: Record<TechType, StatKey> = { Tiro: "kick", Regate: "technique", Bloqueo: "block", Parada: "catch" };
@@ -141,10 +141,20 @@ const gearFor = (gear: Gear | undefined, pos: Position): Record<StatKey, number>
   catch: gear?.[pos]?.catch ?? 0,
 });
 
+/** Técnicas del jugador más la 3.ª de un manual (秘伝書), si la tiene y no la sabía ya. La del manual se
+ *  aprende directamente (sin esperar a nivel 31). */
+export function withExtra(player: Player, code?: string): Technique[] {
+  const extra = code ? TECH_BY_CODE.get(code) : undefined;
+  if (!extra || player.techniques.some((t) => t.code === extra.code)) return player.techniques;
+  return [...player.techniques, { ...extra, unlock: 1, fromBook: true }];
+}
+
 /** Opciones que el usuario puede ajustar. */
 export interface EvalOptions {
   prefs?: Prefs;
   gear?: Gear;
+  /** 3.ª técnica aprendida con manual (código de técnica) */
+  extraTech?: (playerId: string) => string | undefined;
   techLevel: number; // 1-10
   /** Nivel mínimo de tus jugadores (1-440). */
   playerLevel?: number;
@@ -427,7 +437,7 @@ export function evaluate(lineup: Lineup, opts: EvalOptions = DEFAULT_OPTIONS): E
       best: {},
     };
     // Técnicas conocidas a este nivel (la 2.ª se aprende a nivel 31); el poder se calcula luego.
-    for (const tech of player.techniques) {
+    for (const tech of withExtra(player, opts.extraTech?.(pid))) {
       if (tech.unlock > L) continue;
       const lv = tech.levels[Math.min(lvl, tech.levels.length - 1)];
       m.techs.push({ tech, basePower: lv.power, power: lv.power, stat: 0, elemMatch: tech.element === player.element, crit: lv.critical, tpCost: lv.tp, range: lv.range, duel: 0 });
@@ -804,7 +814,7 @@ export function soloTechniques(player: Player, opts: EvalOptions & { stage?: num
   }
   const hits = (m: PowerMod, t: Technique) =>
     (!m.name || m.name === t.name) && (!m.types || m.types.includes(t.type)) && (!m.elements || m.elements.includes(t.element));
-  return player.techniques.map((tech) => {
+  return withExtra(player, opts.extraTech?.(player.id)).map((tech) => {
     const lv = tech.levels[Math.min(lvl, tech.levels.length - 1)];
     const key = TYPE_STAT[tech.type];
     const mult = 1 + (tech.element === player.element ? 0.2 : 0);

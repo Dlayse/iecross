@@ -23,6 +23,10 @@ export interface Profile {
   gearMode?: "auto" | "manual";
   /** Estadísticas que suma el equipamiento a todos los jugadores de cada posición (modo manual) */
   gear?: Gear;
+  /** 3.ª técnica aprendida con manual (秘伝書), por jugador: código de técnica */
+  extraTech?: Record<string, string>;
+  /** Manuales sin usar: código de técnica → copias */
+  books?: Record<string, number>;
 }
 
 interface State {
@@ -58,6 +62,8 @@ function migrate(p: Partial<Profile> & { noAwaken?: string[] }): Profile {
     prefs: p.prefs,
     gear: p.gear,
     gearMode: p.gearMode ?? "auto",
+    extraTech: p.extraTech ?? {},
+    books: p.books ?? {},
   };
 }
 

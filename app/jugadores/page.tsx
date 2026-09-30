@@ -38,7 +38,7 @@ export default function PlayersPage() {
     )
       .flatMap((p) => {
         const stage = owned.has(p.id) ? stageOf(profile, p.id) : 10;
-        return soloTechniques(p, { techLevel: profile.techLevel, playerLevel: profile.level, gear: effectiveGear(profile), stage })
+        return soloTechniques(p, { techLevel: profile.techLevel, playerLevel: profile.level, gear: effectiveGear(profile), extraTech: (id) => profile.extraTech?.[id], stage })
           .filter((t) => !type || t.tech.type === type)
           .map((t) => {
             const v = mode === "full" ? t.full : t.base;
@@ -114,7 +114,7 @@ export default function PlayersPage() {
                 </td>
                 <td>
                   <div className="font-medium">
-                    <span className={ELEMENT_TEXT[t.tech.element]}>●</span> {t.tech.name}
+                    <span className={ELEMENT_TEXT[t.tech.element]}>●</span> {t.tech.name} {t.tech.fromBook && <span title="Aprendida con manual">📘</span>}
                   </div>
                   <div className="text-[11px] text-muted">
                     {t.tech.type}

@@ -132,6 +132,15 @@ export default function MethodPage() {
         cuánto fiarte de las pasivas que se cargan durante el partido (bájalo para priorizar potencia garantizada) y exigir la formación activa.
       </p>
 
+      <H2>Manuales (秘伝書)</H2>
+      <p>
+        Cada jugador tiene 2 técnicas propias y puede aprender <b>una 3.ª con un manual</b>, sin restricción de posición ni de elemento (si coincide
+        con su elemento, también se lleva el +20 %). El manual se gasta al usarlo y se puede sobrescribir con otro. La 3.ª técnica de cada jugador
+        se indica en «Mi plantilla» y cuenta en todos los cálculos, incluidos los combos: por ejemplo, un portero de Montaña que aprenda Mano
+        celestial también recibe el +62 de Hibiki Seigou. Con los manuales que tengas sin usar, cada equipo propone a quién dárselos probando
+        todas las combinaciones de manual y jugador.
+      </p>
+
       <H2>Equipamiento</H2>
       <p>
         Cada pieza suma estadísticas a <b>todos los jugadores con esa posición recomendada</b> (FW, MF, DF o GK), y su nivel máximo va ligado al

@@ -23,6 +23,8 @@ export interface Technique {
   shootBlock: boolean;
   chain: boolean;
   levels: TechLevel[];
+  /** Aprendida con un manual (秘伝書) */
+  fromBook?: boolean;
 }
 
 export interface RawPassive {

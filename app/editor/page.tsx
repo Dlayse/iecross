@@ -39,7 +39,7 @@ export default function EditorPage() {
   const ev = useMemo(
     () =>
       profile
-        ? evaluate({ coachId, coachLevel: level, slots }, { techLevel: profile.techLevel, playerLevel: profile.level, prefs: profile.prefs, gear: effectiveGear(profile), awakening: (id) => stageOf(profile, id) })
+        ? evaluate({ coachId, coachLevel: level, slots }, { techLevel: profile.techLevel, playerLevel: profile.level, prefs: profile.prefs, gear: effectiveGear(profile), extraTech: (id) => profile.extraTech?.[id], awakening: (id) => stageOf(profile, id) })
         : null,
     [coachId, level, slots, profile],
   );

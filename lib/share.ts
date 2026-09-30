@@ -1,6 +1,6 @@
 // Plantilla ↔ enlace. Todo va en el fragmento (#) de la URL: no pasa por ningún servidor.
 import { withBase } from "@/lib/paths";
-import { PLAYER_BY_ID } from "./data";
+import { PLAYER_BY_ID, TECH_BY_CODE } from "./data";
 import { defaultStage, type Profile } from "./store";
 
 interface Packed {
@@ -15,6 +15,8 @@ interface Packed {
   gm?: Profile["gearMode"];
   g?: Profile["gear"];
   pf?: Profile["prefs"];
+  x?: Profile["extraTech"];
+  b?: Profile["books"];
 }
 
 const toB64 = (s: string) => btoa(String.fromCharCode(...new TextEncoder().encode(s))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
@@ -30,6 +32,10 @@ export function encodeProfile(p: Profile): string {
     packed.g = p.gear;
   }
   if (p.prefs) packed.pf = p.prefs;
+  const x = Object.fromEntries(Object.entries(p.extraTech ?? {}).filter(([id]) => p.owned.includes(id)));
+  if (Object.keys(x).length) packed.x = x;
+  const b = Object.fromEntries(Object.entries(p.books ?? {}).filter(([, n]) => n > 0));
+  if (Object.keys(b).length) packed.b = b;
   return toB64(JSON.stringify(packed));
 }
 
@@ -49,6 +55,8 @@ export function decodeProfile(code: string): Omit<Profile, "id"> | null {
       gearMode: x.gm === "manual" ? "manual" : "auto",
       gear: x.g,
       prefs: x.pf,
+      extraTech: Object.fromEntries(Object.entries(x.x ?? {}).filter(([id, code]) => owned.includes(id) && TECH_BY_CODE.has(code))),
+      books: Object.fromEntries(Object.entries(x.b ?? {}).filter(([code, n]) => TECH_BY_CODE.has(code) && n > 0)),
     };
   } catch {
     return null;

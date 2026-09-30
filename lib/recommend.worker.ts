@@ -17,11 +17,12 @@ export interface WorkerRequest {
   gear?: Gear;
   /** Si viene, en vez de optimizar se buscan variantes de este once */
   variantsOf?: Lineup;
+  extraTech?: Record<string, string>;
 }
 
 self.onmessage = (ev: MessageEvent<WorkerRequest>) => {
-  const { tag, pool, coaches, techLevel, playerLevel, stages, locked, prefs, gear } = ev.data;
-  const opts = { techLevel, playerLevel, prefs, gear, awakening: (id: string) => stages[id] ?? 10 };
+  const { tag, pool, coaches, techLevel, playerLevel, stages, locked, prefs, gear, extraTech } = ev.data;
+  const opts = { techLevel, playerLevel, prefs, gear, extraTech: (id: string) => extraTech?.[id], awakening: (id: string) => stages[id] ?? 10 };
   if (ev.data.variantsOf) {
     const vs = variants(ev.data.variantsOf, pool, opts, locked);
     self.postMessage({ type: "variants", coachId: ev.data.variantsOf.coachId, lineups: vs.map((v) => v.lineup) });

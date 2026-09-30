@@ -13,7 +13,8 @@ const GEAR_STATS = [
   ["block", "Bloqueo"],
   ["catch", "Parada"],
 ] as const;
-import { ElementDot, Face, PosBadge, ProfileBar, Stars } from "@/components/ui";
+import { ElementDot, Face, PosBadge, ProfileBar, Stars, TechOptions } from "@/components/ui";
+import { BooksCard } from "@/components/BooksCard";
 import type { Element, Position } from "@/lib/types";
 
 const POSITIONS: Position[] = ["GK", "DF", "MF", "FW"];
@@ -154,6 +155,26 @@ export default function RosterPage() {
                       </select>
                     </label>
                   )}
+                  {on && (
+                    <label className="flex items-center gap-1 border-t border-line/70 px-2 py-1 text-[11px] text-muted" title="3.ª técnica aprendida con un manual (秘伝書). Cualquier jugador puede aprender cualquier técnica.">
+                      📘
+                      <select
+                        value={profile.extraTech?.[p.id] ?? ""}
+                        onChange={(e) =>
+                          update((pr) => {
+                            const extraTech = { ...pr.extraTech };
+                            if (e.target.value) extraTech[p.id] = e.target.value;
+                            else delete extraTech[p.id];
+                            return { ...pr, extraTech };
+                          })
+                        }
+                        className={`ml-auto min-w-0 flex-1 rounded border border-line bg-panel px-1 py-0.5 text-[11px] ${profile.extraTech?.[p.id] ? "text-bolt" : "text-muted"}`}
+                      >
+                        <option value="">3.ª técnica: ninguna</option>
+                        <TechOptions exclude={p.techniques.map((t) => t.code)} />
+                      </select>
+                    </label>
+                  )}
                 </div>
               );
             })}
@@ -215,6 +236,7 @@ export default function RosterPage() {
               Pasivas de nivel a Nv {profile.level}: {[11, 21, 31].map((s) => (profile.level >= s ? Math.floor((profile.level - s) / 30) + 1 : 0)).join(" / ")} (máx. 15/14/14)
             </p>
           </div>
+          <BooksCard profile={profile} update={update} />
           <div className="rounded-xl border border-line bg-panel p-3">
             <h2 className="font-display text-xl font-bold">Equipamiento</h2>
             <p className="mb-2 text-xs text-muted">

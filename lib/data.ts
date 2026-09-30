@@ -1,7 +1,7 @@
 import gameJson from "@/data/game.json";
 import coachesJson from "@/data/coaches.json";
 import { canonicalTag, parsePassive } from "./passives";
-import type { Coach, CoachEffectRaw, Effect, Element, ParsedPassive, Player, Position, TechType, Trigger } from "./types";
+import type { Coach, CoachEffectRaw, Effect, Element, ParsedPassive, Player, Position, TechType, Technique, Trigger } from "./types";
 
 export const GAME_META = (gameJson as { meta: { gameVersion: string; updated: string; playerCount: number; level: number } }).meta;
 export const PLAYERS: Player[] = (gameJson as { players: Player[] }).players;
@@ -10,6 +10,31 @@ export const PLAYER_BY_ID = new Map(PLAYERS.map((p) => [p.id, p]));
 export const COACH_BY_ID = new Map(COACHES.map((c) => [c.id, c]));
 export const ALL_TAGS = [...new Set(PLAYERS.flatMap((p) => p.tags))].sort((a, b) => a.localeCompare(b, "es"));
 export const TEAMS = [...new Set(PLAYERS.map((p) => p.team))].sort((a, b) => a.localeCompare(b, "es"));
+
+// ---------- Técnicas: catálogo y manuales (秘伝書) ----------
+// Un manual enseña a cualquier jugador una 3.ª técnica (sin restricción de posición ni elemento).
+// Las técnicas de los manuales son técnicas que ya tienen otros jugadores, así que salen de aquí.
+export const TECH_BY_CODE = new Map<string, Technique>();
+for (const p of PLAYERS) for (const t of p.techniques) if (!TECH_BY_CODE.has(t.code)) TECH_BY_CODE.set(t.code, t);
+export const TECHNIQUES = [...TECH_BY_CODE.values()].sort((a, b) => a.type.localeCompare(b.type) || b.levels[9].power - a.levels[9].power);
+
+/** Manuales conocidos (Game8, AppMedia, inacross-guide, eventos) → código de técnica */
+export const BOOKS: { code: string; jp: string }[] = [
+  { code: "19011", jp: "ヘブンズタイム" },
+  { code: "21003", jp: "ジャッジスルー" },
+  { code: "11001", jp: "manual del evento Caos" },
+  { code: "13003", jp: "ファイアトルネード" },
+  { code: "12001", jp: "ドラゴンクラッシュ" },
+  { code: "11003", jp: "スピニングシュート" },
+  { code: "14005", jp: "ターザンキック" },
+  { code: "23004", jp: "サイクロン" },
+  { code: "28001", jp: "アステロイドベルト" },
+  { code: "30002", jp: "ザ・ウォール" },
+  { code: "27002", jp: "スピニングカット" },
+  { code: "37004", jp: "爆裂パンチ" },
+  { code: "32005", jp: "ゆがむ空間" },
+].filter((b) => TECH_BY_CODE.has(b.code));
+export const BOOK_CODES = new Set(BOOKS.map((b) => b.code));
 
 const parsedCache = new Map<string, ParsedPassive[]>();
 export function playerPassives(p: Player): ParsedPassive[] {

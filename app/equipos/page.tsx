@@ -5,6 +5,7 @@ import Link from "next/link";
 import { COACHES, PLAYERS } from "@/lib/data";
 import { DEFAULT_PREFS, evaluate, type Lineup, type Prefs } from "@/lib/engine";
 import { PrefsPanel } from "@/components/PrefsPanel";
+import { suggestBooks } from "@/lib/books";
 import { coachLevel, stageOf, useProfiles , effectiveGear } from "@/lib/store";
 import { ProfileBar } from "@/components/ui";
 import { TeamCard } from "@/components/TeamCard";
@@ -62,13 +63,14 @@ export default function TeamsPage() {
       locked: profile.locked.filter((id) => profile.owned.includes(id)),
       prefs,
       gear: effectiveGear(profile),
+      extraTech: profile.extraTech ?? {},
     };
     setGenPrefs(prefs);
     setIdeals({});
     setVariants({});
     lastBase.current = base;
     // Once ideal de cada formación: toda la base, despertar máximo, con tu nivel, equipamiento y entrenador.
-    const ideal = { ...base, tag: "ideal", pool: PLAYERS.map((p) => p.id), stages: {}, locked: [] };
+    const ideal = { ...base, tag: "ideal", pool: PLAYERS.map((p) => p.id), stages: {}, locked: [], extraTech: {} };
     for (let k = 0; k < n; k++) {
       const w = new Worker(new URL("../../lib/recommend.worker.ts", import.meta.url));
       workers.current.push(w);
@@ -116,12 +118,21 @@ export default function TeamsPage() {
           loading: v.loading,
           items: v.lineups.map((l) => ({
             lineup: l,
-            ev: evaluate(l, { techLevel: profile.techLevel, playerLevel: profile.level, prefs: genPrefs ?? prefs, gear: effectiveGear(profile), awakening: (id) => stageOf(profile, id) }),
+            ev: evaluate(l, { techLevel: profile.techLevel, playerLevel: profile.level, prefs: genPrefs ?? prefs, gear: effectiveGear(profile), extraTech: (id) => profile.extraTech?.[id], awakening: (id) => stageOf(profile, id) }),
           })),
         },
       ]),
     );
   }, [variants, profile, genPrefs, prefs]);
+
+  // Manuales sin usar: a quién dárselos en cada equipo
+  const bookTips = useMemo(() => {
+    if (!profile || !lineups) return {};
+    const inv = Object.fromEntries(Object.entries(profile.books ?? {}).filter(([, n]) => n > 0));
+    if (!Object.keys(inv).length) return {};
+    const opts = { techLevel: profile.techLevel, playerLevel: profile.level, prefs: genPrefs ?? prefs, gear: effectiveGear(profile), extraTech: (id: string) => profile.extraTech?.[id], awakening: (id: string) => stageOf(profile, id) };
+    return Object.fromEntries(lineups.map((l) => [l.coachId, suggestBooks(l, opts, inv)]));
+  }, [lineups, profile, genPrefs, prefs]);
 
   const idealEvals = useMemo(() => {
     if (!profile) return {};
@@ -136,7 +147,7 @@ export default function TeamsPage() {
   const results = useMemo(() => {
     if (!lineups || !profile) return [];
     return lineups
-      .map((l) => ({ l, ev: evaluate(l, { techLevel: profile.techLevel, playerLevel: profile.level, prefs: genPrefs ?? prefs, gear: effectiveGear(profile), awakening: (id) => stageOf(profile, id) }) }))
+      .map((l) => ({ l, ev: evaluate(l, { techLevel: profile.techLevel, playerLevel: profile.level, prefs: genPrefs ?? prefs, gear: effectiveGear(profile), extraTech: (id) => profile.extraTech?.[id], awakening: (id) => stageOf(profile, id) }) }))
       .sort((a, b) => b.ev.score - a.ev.score);
   }, [lineups, profile, genPrefs, prefs]);
 
@@ -187,7 +198,7 @@ export default function TeamsPage() {
 
       <div className="space-y-4">
         {(showAll ? results : results.slice(0, 3)).map(({ l, ev }, i) => (
-          <TeamCard key={l.coachId} ev={ev} rank={i + 1} coachId={l.coachId} coachLevel={l.coachLevel} pinned={profile.locked} ideal={idealEvals[l.coachId]} owned={profile.owned} variants={variantEvals[l.coachId]} onVariants={() => requestVariants(l)} />
+          <TeamCard key={l.coachId} ev={ev} rank={i + 1} coachId={l.coachId} coachLevel={l.coachLevel} pinned={profile.locked} ideal={idealEvals[l.coachId]} owned={profile.owned} variants={variantEvals[l.coachId]} onVariants={() => requestVariants(l)} bookTips={bookTips[l.coachId]} />
         ))}
       </div>
       {results.length > 3 && (
